@@ -5,7 +5,7 @@ samples. Want to skip straight to running something? Jump to **Quickstart**
 below. New to evaluation? Read **What is evaluation?** first — it explains
 the *what* and *why* before any code.
 
-## Quickstart — your first eval in ~5 minutes
+## Quickstart — your first eval in ~10 minutes
 
 Just want to see an eval running? Do this:
 
@@ -30,7 +30,13 @@ python evaluate_basic.py
 #    generated rubric matches what your agent is supposed to do.
 python evaluate_custom_rubric.py
 
-# 5. (For any user-facing agent.) Probe for unsafe behavior under
+# 5. Generate a domain-relevant dataset for your agent and score it. Edit
+#    data/synthetic-seeds.jsonl first so the seeds match your agent's
+#    domain (defaults are generic). Service requires max_samples >= 15;
+#    the run takes a couple of minutes.
+python generate_dataset_synthetic.py
+
+# 6. (For any user-facing agent.) Probe for unsafe behavior under
 #    adversarial input.
 python evaluate_redteam.py
 ```
@@ -44,20 +50,12 @@ see per-row scores, rationales, and an aggregate chart.
 set `EVAL_AGENT_NAME` + `EVAL_AGENT_VERSION` to your agent's manifest
 values; the same scripts work.
 
-**Next step — get questions that match *your* agent's domain.** The
-Quickstart uses a handful of inline placeholder questions
-("What's the capital of France?", a few adversarial prompts). For real
-signal you need a dataset of questions a real user would ask your agent:
-
-* No traffic yet → [`generate_dataset_synthetic.py`](./generate_dataset_synthetic.py)
-  bootstraps a dataset from a few topic seeds you write in
-  `data/synthetic-seeds.jsonl`.
-* Already in production → [`generate_dataset_from_traces.py`](./generate_dataset_from_traces.py)
-  materializes recent traces into a registered, reusable dataset.
-
-Both scripts evaluate the generated rows in one shot, so a single run
-takes you from "no dataset" to "first scored eval against domain-relevant
-questions". See **Pick the right flow** below for the full menu.
+**Already have production traffic?** Step 5's synthetic dataset is the
+right starting point for cold-start projects. Once your agent has real
+trace history, swap step 5 for
+[`generate_dataset_from_traces.py`](./generate_dataset_from_traces.py),
+which materializes recent traces into a registered, reusable dataset
+instead of synthesizing one.
 
 <details>
 <summary>What the output looks like</summary>
