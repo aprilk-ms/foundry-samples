@@ -6,7 +6,7 @@ scripts in this sample.
 These helpers wrap two patterns:
 
 * The typed Foundry / OpenAI client surfaces — ``AIProjectClient`` and
-  ``openai_client.evals.{create,runs.create,runs.retrieve}``. Eval groups and
+  ``openai_client.evals.{create,runs.create,runs.retrieve}``. Evals and
   eval runs are GA-ish in ``2025-11-15-preview`` and exposed via
   ``openai_client.evals``.
 

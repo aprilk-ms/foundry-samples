@@ -4,7 +4,7 @@
 
 DESCRIPTION:
     Configures an evaluation run that fires automatically as new responses
-    are produced by your deployed hosted agent. The same eval group can also
+    are produced by your deployed hosted agent. The same eval can also
     be re-run on a schedule by re-invoking ``runs.create`` — Foundry tracks
     each run independently.
 
@@ -19,7 +19,7 @@ DESCRIPTION:
         a ``schedule`` clause. The Foundry service re-evaluates new traces
         on the chosen cadence.
 
-    The script prints the eval group + run IDs so you can pause / delete
+    The script prints the eval + run IDs so you can pause / delete
     them later via ``--delete <eval_id>:<run_id>`` or in the Foundry portal.
 
 USAGE:
@@ -73,7 +73,7 @@ def main() -> None:
             },
             testing_criteria=build_conversation_evaluators(model),
         )
-        print(f"Eval group created: {eval_object.id}")
+        print(f"Eval created: {eval_object.id}")
 
         if interval:
             data_source = {

@@ -3,7 +3,7 @@
 """Multi-turn evaluation driven by simulated conversations (Scenario S4).
 
 DESCRIPTION:
-    Creates an eval group with the four built-in conversation-level evaluators
+    Creates an eval with the four built-in conversation-level evaluators
     (customer_satisfaction, groundedness, coherence, task_completion), then
     drives an eval run that *simulates* multi-turn conversations against the
     deployed hosted agent using ``azure_ai_target_completions`` with

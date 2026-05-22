@@ -52,8 +52,8 @@ print already does that math — you just need to remember the direction.
 | **Evaluator** | The judge that scores one row. Three flavors: **custom rubric** (auto-generated from your prompt — primary recommended), *built-in* (`builtin.violence`, `builtin.fluency`, …), or *code-based* (yours). |
 | **Dataset** | The rows you evaluate against. Either inline `{query: ...}` items, a registered Foundry dataset, or generated from traces. |
 | **Trace** | A recording of one real agent invocation (request, tool calls, response, latencies) sent to Application Insights by the agent runtime. |
-| **Eval group** | A reusable "test suite" definition — schema + evaluators. Created once, run many times. |
-| **Eval run** | One execution of an eval group against a specific dataset / agent / time window. Has a status, a result-counts summary, and a `report_url`. |
+| **Eval** | A reusable "test suite" definition — schema + evaluators. Created once, run many times. |
+| **Eval run** | One execution of an eval against a specific dataset / agent / time window. Has a status, a result-counts summary, and a `report_url`. |
 | **Single-turn vs. multi-turn** | Single-turn evaluators score one `{query, response}` pair. Multi-turn evaluators score a whole `messages: [...]` conversation. |
 | **Score shape** | See the table above — quality is 1-5 (higher better), safety is 0-7 severity (higher worse), some are boolean. |
 
@@ -315,7 +315,7 @@ deployment first.
 
 Every script prints:
 
-* the **eval group ID** and **run ID** (use them to look up the run via
+* the **eval ID** and **run ID** (use them to look up the run via
   the SDK), and
 * a **report URL** that opens the run in the Foundry portal's
   [Evaluations](https://ai.azure.com/) page.
