@@ -44,6 +44,21 @@ see per-row scores, rationales, and an aggregate chart.
 set `EVAL_AGENT_NAME` + `EVAL_AGENT_VERSION` to your agent's manifest
 values; the same scripts work.
 
+**Next step — get questions that match *your* agent's domain.** The
+Quickstart uses a handful of inline placeholder questions
+("What's the capital of France?", a few adversarial prompts). For real
+signal you need a dataset of questions a real user would ask your agent:
+
+* No traffic yet → [`generate_dataset_synthetic.py`](./generate_dataset_synthetic.py)
+  bootstraps a dataset from a few topic seeds you write in
+  `data/synthetic-seeds.jsonl`.
+* Already in production → [`generate_dataset_from_traces.py`](./generate_dataset_from_traces.py)
+  materializes recent traces into a registered, reusable dataset.
+
+Both scripts evaluate the generated rows in one shot, so a single run
+takes you from "no dataset" to "first scored eval against domain-relevant
+questions". See **Pick the right flow** below for the full menu.
+
 <details>
 <summary>What the output looks like</summary>
 
