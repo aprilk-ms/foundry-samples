@@ -40,6 +40,10 @@ USAGE:
     # ▼ CHANGE THE PROMPT IN submit_generation_job() FIRST — see below.
     python evaluate_custom_rubric.py
 
+    # Score against a generated dataset (the Quickstart flow):
+    EVAL_DATASET_NAME=<name-from-synthetic-script> \
+        python evaluate_custom_rubric.py
+
     # Optional: also run the HITL "edit + regenerate" flow.
     EVAL_RUBRIC_REGENERATE=true python evaluate_custom_rubric.py
 
@@ -72,6 +76,70 @@ from eval_common import (
     target_agent,
 )
 # </imports_and_includes>
+
+
+# <rubric_data_source>
+def _rubric_data_source() -> dict[str, Any]:
+    """Build the eval-run ``data_source`` for the rubric.
+
+    Two modes:
+
+    1. **Dataset mode** — if ``EVAL_DATASET_NAME`` is set (typically by
+       ``generate_dataset_synthetic.py`` running with
+       ``EVAL_GENERATE_ONLY=true``), the eval uses that registered Foundry
+       dataset as input. This is the recommended path: the dataset
+       contains domain-relevant queries that match the rubric.
+    2. **Inline mode** — otherwise, three placeholder questions baked into
+       this script are used so the script still works standalone. Real
+       projects should run this in dataset mode.
+
+    Either way, the eval target is the deployed hosted agent (queries are
+    sent to the agent and the agent's live responses are what get scored
+    by the rubric).
+    """
+    dataset_name = os.environ.get("EVAL_DATASET_NAME")
+    if dataset_name:
+        dataset_version = os.environ.get("EVAL_DATASET_VERSION", "1")
+        print(
+            f"Using dataset {dataset_name}:{dataset_version} as eval input "
+            "(EVAL_DATASET_NAME is set)."
+        )
+        source: dict[str, Any] = {
+            "type": "azure_ai_dataset",
+            "name": dataset_name,
+            "version": dataset_version,
+        }
+    else:
+        print(
+            "No EVAL_DATASET_NAME set — using inline placeholder questions. "
+            "For real signal, run generate_dataset_synthetic.py with "
+            "EVAL_GENERATE_ONLY=true first, then re-run this script with "
+            "EVAL_DATASET_NAME set to the printed dataset name."
+        )
+        source = {
+            "type": "file_content",
+            "content": [
+                {"item": {"query": "What's the capital of France?"}},
+                {"item": {"query": "Briefly explain what a hosted agent is."}},
+                {"item": {"query": "What's 17 times 23?"}},
+            ],
+        }
+    return {
+        "type": "azure_ai_target_completions",
+        "source": source,
+        "input_messages": {
+            "type": "template",
+            "template": [
+                {
+                    "type": "message",
+                    "role": "user",
+                    "content": {"type": "input_text", "text": "{{item.query}}"},
+                }
+            ],
+        },
+        "target": target_agent(),
+    }
+# </rubric_data_source>
 
 
 # <generate_rubric>
@@ -214,36 +282,7 @@ def run_eval_with_rubric(evaluator_name: str, evaluator_version: int | str) -> N
         run = openai_client.evals.runs.create(
             eval_id=eval_object.id,
             name=f"run-against-{target_agent()['name']}",
-            data_source={
-                "type": "azure_ai_target_completions",
-                # ┌─────────────────────────────────────────────────────────┐
-                # │  ▶ CHANGE THIS TOO: use questions that match the rubric │
-                # │     prompt you wrote in submit_generation_job().        │
-                # │                                                         │
-                # │  A rubric tailored to your domain scored against generic│
-                # │  trivia (France, arithmetic, …) gives confusing results.│
-                # │  Use questions a real user would ask your agent.        │
-                # └─────────────────────────────────────────────────────────┘
-                "source": {
-                    "type": "file_content",
-                    "content": [
-                        {"item": {"query": "What's the capital of France?"}},
-                        {"item": {"query": "Briefly explain what a hosted agent is."}},
-                        {"item": {"query": "What's 17 times 23?"}},
-                    ],
-                },
-                "input_messages": {
-                    "type": "template",
-                    "template": [
-                        {
-                            "type": "message",
-                            "role": "user",
-                            "content": {"type": "input_text", "text": "{{item.query}}"},
-                        }
-                    ],
-                },
-                "target": target_agent(),
-            },
+            data_source=_rubric_data_source(),
         )
         print(f"Eval run created: {run.id}")
         print("Polling — this typically takes 30–120 seconds.")

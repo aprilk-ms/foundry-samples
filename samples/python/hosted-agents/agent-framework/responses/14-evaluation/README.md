@@ -7,7 +7,9 @@ the *what* and *why* before any code.
 
 ## Quickstart — your first eval in ~10 minutes
 
-Just want to see an eval running? Do this:
+Just want to see an eval running? This is the recommended path: generate
+a **dataset** of domain-relevant questions, generate a **custom rubric**
+for what "good" means, then **score the agent** with both.
 
 ```bash
 # 1. Deploy this folder's tiny demo agent (one time).
@@ -22,43 +24,66 @@ export FOUNDRY_PROJECT_ENDPOINT="https://<account>.services.ai.azure.com/api/pro
 export AZURE_AI_MODEL_DEPLOYMENT_NAME="gpt-4.1-mini"
 pip install -r requirements.txt
 
-# 3. (Optional, ~60s.) Sanity-check the plumbing with built-in evaluators.
-python evaluate_basic.py
+# 3. Generate the dataset. Edit data/synthetic-seeds.jsonl first so the
+#    seeds match your agent's domain (defaults are generic). The service
+#    requires max_samples >= 15; takes a couple of minutes.
+EVAL_GENERATE_ONLY=true python generate_dataset_synthetic.py
+# → prints two `export EVAL_DATASET_NAME=...` lines — copy-paste them now.
 
-# 4. Run the primary recommended evaluator. Edit the agent description at
-#    the top of submit_generation_job() in the script first so the
-#    generated rubric matches what your agent is supposed to do.
+# 4. Generate the rubric AND score your agent with it, using the dataset
+#    from step 3 as input. Edit the agent_description at the top of
+#    submit_generation_job() first so the rubric matches what your agent
+#    is supposed to do.
 python evaluate_custom_rubric.py
-
-# 5. Generate a domain-relevant dataset for your agent and score it. Edit
-#    data/synthetic-seeds.jsonl first so the seeds match your agent's
-#    domain (defaults are generic). Service requires max_samples >= 15;
-#    the run takes a couple of minutes.
-python generate_dataset_synthetic.py
-
-# 6. (For any user-facing agent.) Probe for unsafe behavior under
-#    adversarial input.
-python evaluate_redteam.py
 ```
 
 > **Windows / PowerShell?** Replace `export FOO=bar` with `$env:FOO = "bar"`.
 
-Each script prints a **Report URL** — open it in the Foundry portal to
-see per-row scores, rationales, and an aggregate chart.
+Step 4 prints a **Report URL** — open it in the Foundry portal to see
+per-row scores, per-dimension rationales, and an aggregate chart.
 
 **Evaluating *your own* deployed agent (not this demo)?** Skip step 1 and
 set `EVAL_AGENT_NAME` + `EVAL_AGENT_VERSION` to your agent's manifest
 values; the same scripts work.
 
-**Already have production traffic?** Step 5's synthetic dataset is the
-right starting point for cold-start projects. Once your agent has real
-trace history, swap step 5 for
+**Already have production traffic?** Swap step 3 for
 [`generate_dataset_from_traces.py`](./generate_dataset_from_traces.py),
-which materializes recent traces into a registered, reusable dataset
-instead of synthesizing one.
+which materializes recent traces into a dataset instead of synthesizing
+one. Step 4 doesn't change.
+
+**Next, run safety checks.** Once the rubric flow is working, run
+[`evaluate_redteam.py`](./evaluate_redteam.py) for any user-facing agent —
+it probes for unsafe behavior under adversarial input. See
+**Pick the right flow** below for the full menu (sanity check,
+conversation-level, scheduled, etc.).
 
 <details>
 <summary>What the output looks like</summary>
+
+Step 3 (`generate_dataset_synthetic.py` with `EVAL_GENERATE_ONLY=true`):
+
+```
+Using API version: 2025-11-15-preview
+Project: https://<account>.services.ai.azure.com/api/projects/<project>
+
+Loaded 6 seeds from synthetic-seeds.jsonl
+Submitting synthetic data-generation job 'hosted-agent-synthetic-eval' with 6 prompt seeds …
+datagen/datagen_abc123…: queued
+datagen/datagen_abc123…: in_progress
+datagen/datagen_abc123…: succeeded
+
+Generated dataset: hosted-agent-synthetic-eval:1
+
+EVAL_GENERATE_ONLY set — skipping the built-in turn-level eval that this
+script normally runs. To score this dataset with your custom rubric, copy
+the env-var line below into your shell and then run evaluate_custom_rubric.py:
+
+  export EVAL_DATASET_NAME="hosted-agent-synthetic-eval"
+  export EVAL_DATASET_VERSION="1"
+  python evaluate_custom_rubric.py
+```
+
+Step 4 (`evaluate_custom_rubric.py` with `EVAL_DATASET_NAME` set):
 
 ```
 Using API version: 2025-11-15-preview
@@ -77,6 +102,7 @@ Generated rubric "custom-rubric-…" v1 with 6 dimensions:
   - safety_disclaimers (weight 0.15)
   - hallucination_resistance (weight 0.10)
 
+Using dataset hosted-agent-synthetic-eval:1 as eval input (EVAL_DATASET_NAME is set).
 Eval created: eval_abc123…
 Eval run created: evalrun_def456…
   status: queued
@@ -84,10 +110,10 @@ Eval run created: evalrun_def456…
   status: completed
 
 ✓ Eval run completed.
-Result counts: {'passed': 3, 'failed': 1, 'errored': 0, 'total': 4}
+Result counts: {'passed': 12, 'failed': 3, 'errored': 0, 'total': 15}
 Report URL: https://ai.azure.com/.../evaluations/evalrun_def456…
 
-Showing 3 of 4 output items:
+Showing 3 of 15 output items:
 (set EVAL_DEBUG=1 to also see the raw payload.)
 
   [1] Question: What's your return policy on hiking boots?
@@ -252,7 +278,10 @@ is either a sanity-check, a conversation-level variant, or a supporting flow.
    to *your* agent's job (tone, completeness, "did it cite a source?")
    from a short prompt, then evaluates against it. **Edit the prompt at
    the top of `submit_generation_job()` first** — the default is a
-   generic placeholder. **Use this for any project you care about.**
+   generic placeholder. **Use this for any project you care about.** Set
+   `EVAL_DATASET_NAME` (and optionally `EVAL_DATASET_VERSION`) to score
+   against a Foundry dataset instead of the inline placeholder
+   questions — this is what the Quickstart chains into.
 2. [`evaluate_redteam.py`](./evaluate_redteam.py) — **primary safety
    evaluator.** Sends adversarial prompts (violence, self-harm, hate,
    sexual) and scores responses on the **0-7 severity** scale (higher
@@ -278,8 +307,11 @@ is either a sanity-check, a conversation-level variant, or a supporting flow.
 7. [`generate_dataset_synthetic.py`](./generate_dataset_synthetic.py) —
    bootstraps a domain-relevant dataset from short topic seeds when you
    have no traffic yet. **Default**: runs the generated questions through
-   your deployed agent and scores the answers. Set
-   `EVAL_AGAINST_DATASET_ONLY=true` to grade only the synthetic rows.
+   your deployed agent and scores the answers with built-in turn-level
+   evaluators. Set `EVAL_AGAINST_DATASET_ONLY=true` to grade only the
+   synthetic rows. Set `EVAL_GENERATE_ONLY=true` to materialize the
+   dataset and exit — the Quickstart uses this mode and then hands the
+   dataset off to `evaluate_custom_rubric.py`.
 8. [`evaluate_scheduled.py`](./evaluate_scheduled.py) — scores every new
    agent response automatically (or every hour over recent traces with
    `EVAL_SCHEDULE_INTERVAL=1h`). ⚠ **The schedule keeps running after

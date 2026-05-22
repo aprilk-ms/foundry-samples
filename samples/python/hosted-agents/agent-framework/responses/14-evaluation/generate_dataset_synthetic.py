@@ -20,6 +20,12 @@ DESCRIPTION:
     ``EVAL_AGAINST_DATASET_ONLY=true``. That mode skips the agent and grades
     the reference responses the generator produced.
 
+    For the Quickstart flow (datagen here → custom rubric in
+    ``evaluate_custom_rubric.py`` → combined eval against the agent), set
+    ``EVAL_GENERATE_ONLY=true``. The dataset is materialized and registered,
+    then this script exits and prints the env-var line to chain into
+    ``evaluate_custom_rubric.py``.
+
     Use this script when you don't yet have production traffic but want a
     domain-relevant evaluation dataset to bootstrap your agent.
 
@@ -29,9 +35,15 @@ USAGE:
     # Score the generated reference answers instead of your agent:
     EVAL_AGAINST_DATASET_ONLY=true python generate_dataset_synthetic.py
 
+    # Just materialize the dataset and stop — for the Quickstart hand-off
+    # to evaluate_custom_rubric.py:
+    EVAL_GENERATE_ONLY=true python generate_dataset_synthetic.py
+
     Prerequisites:
       * Default mode: a deployed hosted agent (same as ``evaluate_basic.py``).
       * ``EVAL_AGAINST_DATASET_ONLY=true`` mode: no deployed agent required.
+      * ``EVAL_GENERATE_ONLY=true`` mode: no deployed agent required for
+        this script (the rubric script that scores against it does need one).
       * Service requires ``max_samples >= 15`` and ``model_options.model``
         for ``simple_qna``.
 """
@@ -229,6 +241,22 @@ def main() -> None:
     dataset_name_out = generated.get("name", dataset_name)
     dataset_version_out = str(generated.get("version", "1"))
     print(f"\nGenerated dataset: {dataset_name_out}:{dataset_version_out}")
+
+    if os.environ.get("EVAL_GENERATE_ONLY", "").lower() in {"1", "true", "yes"}:
+        # Quickstart flow chains this script with evaluate_custom_rubric.py:
+        # the dataset is the input, the custom rubric is the evaluator. Emit
+        # the env-var assignment in a copy-pasteable form so the next step
+        # can pick it up without portal lookup.
+        print(
+            "\nEVAL_GENERATE_ONLY set — skipping the built-in turn-level "
+            "eval that this script normally runs. To score this dataset "
+            "with your custom rubric, copy the env-var line below into "
+            "your shell and then run evaluate_custom_rubric.py:\n"
+        )
+        print(f'  export EVAL_DATASET_NAME="{dataset_name_out}"')
+        print(f'  export EVAL_DATASET_VERSION="{dataset_version_out}"')
+        print("  python evaluate_custom_rubric.py")
+        return
 
     eval_against_dataset(dataset_name_out, dataset_version_out)
 
