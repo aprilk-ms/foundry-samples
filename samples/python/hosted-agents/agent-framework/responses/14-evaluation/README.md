@@ -1,8 +1,92 @@
 # Evaluating a hosted agent
 
 This sample is the **evaluation learning path** for the Python hosted-agent
-samples. New to evaluation? Read the next two sections first — they explain
+samples. Want to skip straight to running something? Jump to **Quickstart**
+below. New to evaluation? Read **What is evaluation?** first — it explains
 the *what* and *why* before any code.
+
+## Quickstart — your first eval in ~5 minutes
+
+Just want to see an eval running? Do this:
+
+```bash
+# 1. Deploy this folder's tiny demo agent (one time).
+mkdir hosted-agent-evaluation && cd hosted-agent-evaluation
+azd ai agent init -m <path-to-this-folder>/agent.manifest.yaml
+azd up
+
+# 2. Sign in + set env. Copy the project endpoint from `azd up`'s output
+#    or from your Foundry project's Overview page.
+az login
+export FOUNDRY_PROJECT_ENDPOINT="https://<account>.services.ai.azure.com/api/projects/<project>"
+export AZURE_AI_MODEL_DEPLOYMENT_NAME="gpt-4.1-mini"
+pip install -r requirements.txt
+
+# 3. (Optional, ~60s.) Sanity-check the plumbing with built-in evaluators.
+python evaluate_basic.py
+
+# 4. Run the primary recommended evaluator. Edit the agent description at
+#    the top of submit_generation_job() in the script first so the
+#    generated rubric matches what your agent is supposed to do.
+python evaluate_custom_rubric.py
+
+# 5. (For any user-facing agent.) Probe for unsafe behavior under
+#    adversarial input.
+python evaluate_redteam.py
+```
+
+> **Windows / PowerShell?** Replace `export FOO=bar` with `$env:FOO = "bar"`.
+
+Each script prints a **Report URL** — open it in the Foundry portal to
+see per-row scores, rationales, and an aggregate chart.
+
+**Evaluating *your own* deployed agent (not this demo)?** Skip step 1 and
+set `EVAL_AGENT_NAME` + `EVAL_AGENT_VERSION` to your agent's manifest
+values; the same scripts work.
+
+<details>
+<summary>What the output looks like</summary>
+
+```
+Using API version: 2025-11-15-preview
+Project: https://<account>.services.ai.azure.com/api/projects/<project>
+Target agent: {'type': 'azure_ai_agent', 'name': 'agent-framework-agent-evaluation-responses', 'version': '1'}
+
+Submitting evaluator generation job…
+  status: queued
+  status: in_progress
+  status: completed
+Generated rubric "custom-rubric-…" v1 with 6 dimensions:
+  - factuality (weight 0.25)
+  - tone (weight 0.15)
+  - completeness (weight 0.20)
+  - policy_citation (weight 0.15)
+  - safety_disclaimers (weight 0.15)
+  - hallucination_resistance (weight 0.10)
+
+Eval created: eval_abc123…
+Eval run created: evalrun_def456…
+  status: queued
+  status: in_progress
+  status: completed
+
+✓ Eval run completed.
+Result counts: {'passed': 3, 'failed': 1, 'errored': 0, 'total': 4}
+Report URL: https://ai.azure.com/.../evaluations/evalrun_def456…
+
+Showing 3 of 4 output items:
+(set EVAL_DEBUG=1 to also see the raw payload.)
+
+  [1] Question: What's your return policy on hiking boots?
+      Answer:   You can return unused boots within 60 days for a full refund.
+    custom_rubric                 score=4.6    PASS
+        rationale: Accurate policy, friendly tone, cites the 60-day window. Lacks an explicit policy link.
+```
+
+</details>
+
+The rest of this README explains *why* each step matters, what the scores
+mean, and which other flows to reach for once the basics work.
 
 ## What is evaluation?
 
@@ -62,7 +146,7 @@ print already does that math — you just need to remember the direction.
 > pipeline. They are inert in Python — feel free to ignore them when
 > reading or copying code.
 
-## Your first run
+## How this sample is structured
 
 This folder contains *both* a tiny demo agent (`main.py`, `agent.yaml`) **and**
 the eval scripts. The agent is a minimal `gpt-4.1-mini` chat agent with
@@ -79,82 +163,11 @@ something to grade. The flow is:
    evaluate_*.py ──── eval run ──── scores ──── report_url in Foundry portal
 ```
 
-```bash
-# 1. Deploy the tiny demo agent (one time).
-#    These commands follow the same pattern as every other Python sample
-#    in samples/python/hosted-agents/ — see the parent README for details.
-mkdir hosted-agent-evaluation && cd hosted-agent-evaluation
-azd ai agent init -m ../path/to/foundry-samples/samples/python/hosted-agents/agent-framework/responses/14-evaluation/agent.manifest.yaml
-azd up
-
-# After `azd up` succeeds, copy the project endpoint it prints (or grab it
-# from your Foundry project's Overview page) into the env var below.
-
-# 2. Set env + install eval deps locally.
-az login
-export FOUNDRY_PROJECT_ENDPOINT="https://<account>.services.ai.azure.com/api/projects/<project>"
-export AZURE_AI_MODEL_DEPLOYMENT_NAME="gpt-4.1-mini"
-pip install -r requirements.txt
-
-# 3. Run the primary recommended evaluator. Edit the agent description at
-#    the top of submit_generation_job() in the script first so the
-#    generated rubric matches what your agent is supposed to do.
-python evaluate_custom_rubric.py
-```
-
-> **Windows / PowerShell?** Replace `export FOO=bar` with `$env:FOO = "bar"`.
-
-> Want a 60-second sanity check before kicking off the rubric
-> generation? Run [`evaluate_basic.py`](./evaluate_basic.py) first — it
-> uses generic built-in evaluators to confirm the end-to-end plumbing
-> works, then come back to `evaluate_custom_rubric.py` for the real signal.
-
-What you'll see (trimmed):
-
-```
-Using API version: 2025-11-15-preview
-Project: https://<account>.services.ai.azure.com/api/projects/<project>
-Target agent: {'type': 'azure_ai_agent', 'name': 'agent-framework-agent-evaluation-responses', 'version': '1'}
-
-Submitting evaluator generation job…
-  status: queued
-  status: in_progress
-  status: completed
-Generated rubric "custom-rubric-…" v1 with 6 dimensions:
-  - factuality (weight 0.25)
-  - tone (weight 0.15)
-  - completeness (weight 0.20)
-  - policy_citation (weight 0.15)
-  - safety_disclaimers (weight 0.15)
-  - hallucination_resistance (weight 0.10)
-
-Eval created: eval_abc123…
-Eval run created: evalrun_def456…
-  status: queued
-  status: in_progress
-  status: completed
-
-✓ Eval run completed.
-Result counts: {'passed': 3, 'failed': 1, 'errored': 0, 'total': 4}
-Report URL: https://ai.azure.com/.../evaluations/evalrun_def456…
-
-Showing 3 of 4 output items:
-(set EVAL_DEBUG=1 to also see the raw payload.)
-
-  [1] Question: What's your return policy on hiking boots?
-      Answer:   You can return unused boots within 60 days for a full refund.
-    custom_rubric                 score=4.6    PASS
-        rationale: Accurate policy, friendly tone, cites the 60-day window. Lacks an explicit policy link.
-```
-
-Open the **Report URL** in the Foundry portal to see every row, every
-dimension's per-row score and rationale, and an aggregate chart.
-
-> **Already shipping to users?** Also run
-> [`evaluate_redteam.py`](./evaluate_redteam.py) — the Custom Rubric Evaluator grades
-> *quality on what you asked for*; safety evaluators grade *whether the
-> agent ever produces harmful content under adversarial input*. They're
-> complementary, not redundant.
+> **Already shipping to users?** The Custom Rubric Evaluator grades
+> *quality on what you asked for*; safety evaluators (step 5 in
+> Quickstart, [`evaluate_redteam.py`](./evaluate_redteam.py)) grade
+> *whether the agent ever produces harmful content under adversarial
+> input*. They're complementary, not redundant — run both.
 
 ## If a score is low, what next?
 
@@ -263,7 +276,7 @@ is either a sanity-check, a conversation-level variant, or a supporting flow.
 
 1. **A deployed hosted agent.** This folder ships its own tiny demo agent
    (`main.py`, `agent.yaml`). Deploy it once with the `azd ai agent init`
-   + `azd up` flow in "Your first run" above (the same pattern as every
+   + `azd up` flow in **Quickstart** above (the same pattern as every
    other Python sample in `samples/python/hosted-agents/`). The eval
    scripts target the deployed agent identified by `EVAL_AGENT_NAME`
    (default `agent-framework-agent-evaluation-responses`) and
