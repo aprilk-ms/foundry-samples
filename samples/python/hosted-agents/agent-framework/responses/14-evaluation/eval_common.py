@@ -203,7 +203,7 @@ def _extract_query(item: Any) -> str:
             )
             if first_user:
                 content = first_user.get("content", "")
-                # Conversation-shape: print a brief multi-turn summary.
+                # Conversation-shape: print a brief summary.
                 count = len([m for m in msgs if m])
                 return _truncate(f"[{count}-turn conversation] first user: {content}")
     return ""

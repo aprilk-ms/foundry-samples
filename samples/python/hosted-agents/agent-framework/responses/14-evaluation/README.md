@@ -54,7 +54,7 @@ print already does that math — you just need to remember the direction.
 | **Trace** | A recording of one real agent invocation (request, tool calls, response, latencies) sent to Application Insights by the agent runtime. |
 | **Eval** | A reusable "test suite" definition — schema + evaluators. Created once, run many times. |
 | **Eval run** | One execution of an eval against a specific dataset / agent / time window. Has a status, a result-counts summary, and a `report_url`. |
-| **Single-turn vs. multi-turn** | Single-turn evaluators score one `{query, response}` pair. Multi-turn evaluators score a whole `messages: [...]` conversation. |
+| **Turn-level vs. conversation-level** | Turn-level evaluators score one `{query, response}` pair. Conversation-level evaluators score a whole `messages: [...]` conversation. |
 | **Score shape** | See the table above — quality is 1-5 (higher better), safety is 0-7 severity (higher worse), some are boolean. |
 
 > The tags you may see in the Python scripts (`<imports_and_includes>`,
@@ -198,7 +198,7 @@ heavier — be deliberate before running them:
 | `evaluate_scheduled.py` | One eval row **per new agent response** (event-triggered) | ⚠ **Continues running after the script exits.** Use the portal (or the delete snippet at the bottom of the script) to pause or remove the schedule when you're done. |
 
 If you're on a sandbox project with cost alerts, set them up before
-running the multi-turn / scheduled / red-team flows.
+running the conversation-level / scheduled / red-team flows.
 
 ## Pick the right flow
 
@@ -209,8 +209,8 @@ running the multi-turn / scheduled / red-team flows.
 | **Get a tailored evaluator for your agent (primary)** ⭐ | [`evaluate_custom_rubric.py`](./evaluate_custom_rubric.py) |
 | **Probe the agent against adversarial / red-team prompts (primary for user-facing agents)** | [`evaluate_redteam.py`](./evaluate_redteam.py) |
 | Sanity-check end-to-end plumbing with generic built-in evaluators | [`evaluate_basic.py`](./evaluate_basic.py) |
-| Evaluate multi-turn behavior **without** any existing dataset (the service generates conversations for you) | [`evaluate_multiturn_simulation.py`](./evaluate_multiturn_simulation.py) |
-| Evaluate multi-turn behavior over **your own live traces** | [`evaluate_multiturn_traces.py`](./evaluate_multiturn_traces.py) |
+| Evaluate conversation-level behavior **without** any existing dataset (the service generates conversations for you) | [`evaluate_multiturn_simulation.py`](./evaluate_multiturn_simulation.py) |
+| Evaluate conversation-level behavior over **your own live traces** | [`evaluate_multiturn_traces.py`](./evaluate_multiturn_traces.py) |
 | Turn recent agent **traces** into a reusable evaluation dataset | [`generate_dataset_from_traces.py`](./generate_dataset_from_traces.py) |
 | Bootstrap an evaluation dataset from a few **topic seeds** | [`generate_dataset_synthetic.py`](./generate_dataset_synthetic.py) |
 | Score every new agent response **continuously** (or on a schedule) | [`evaluate_scheduled.py`](./evaluate_scheduled.py) |
@@ -219,7 +219,7 @@ running the multi-turn / scheduled / red-team flows.
 
 The list below is in *recommended exploration order*. The two primary
 scripts (**custom rubric** + **red-team**) come first; everything else
-is either a sanity-check, a multi-turn variant, or a supporting flow.
+is either a sanity-check, a conversation-level variant, or a supporting flow.
 
 1. [`evaluate_custom_rubric.py`](./evaluate_custom_rubric.py) ⭐ — **primary
    recommended evaluator.** Generates a 5-7 dimension rubric tailored
@@ -239,10 +239,10 @@ is either a sanity-check, a multi-turn variant, or a supporting flow.
    that your project endpoint + agent + creds are wired up correctly;
    for real signal use `evaluate_custom_rubric.py`.
 4. [`evaluate_multiturn_simulation.py`](./evaluate_multiturn_simulation.py) —
-   Foundry simulates full multi-turn conversations from seed scenarios
+   Foundry simulates full conversations from seed scenarios
    and scores each. **Run this before you have real traffic.**
 5. [`evaluate_multiturn_traces.py`](./evaluate_multiturn_traces.py) —
-   same four multi-turn evaluators, scored against **real traced
+   same four conversation-level evaluators, scored against **real traced
    conversations**. **Run this once you have traffic.**
 6. [`generate_dataset_from_traces.py`](./generate_dataset_from_traces.py)
    — materializes recent traces into a registered, reusable dataset and
@@ -329,10 +329,10 @@ The per-row summary the scripts print is trimmed for readability. Set
 
 ## Related samples
 
-* [`01-basic/`](../01-basic/) — also ships **multi-turn evaluation scripts**
-  (simulation + traces) co-located with the basic agent for the multi-turn
-  learning path. Same patterns as scripts 3-4 above, narrowed to the
-  `01-basic` agent.
+* [`01-basic/`](../01-basic/) — also ships **conversation-level evaluation scripts**
+  (simulation + traces) co-located with the basic agent for the
+  conversation-level learning path. Same patterns as scripts 3-4 above,
+  narrowed to the `01-basic` agent.
 * [`08-observability/`](../08-observability/) — the canonical tracing
   sample. Trace-driven and continuous evaluation depend on the same
   `ENABLE_INSTRUMENTATION` / `ENABLE_SENSITIVE_DATA` pattern this sample
@@ -344,19 +344,3 @@ The per-row summary the scripts print is trimmed for readability. Set
 * [Built-in evaluators reference](https://learn.microsoft.com/azure/ai-foundry/how-to/develop/evaluate-sdk)
 * [Continuous evaluation in Foundry](https://learn.microsoft.com/azure/ai-foundry/how-to/develop/agent-evaluate-sdk)
 * [Content-safety severity scale (0-7)](https://learn.microsoft.com/azure/ai-services/content-safety/concepts/harm-categories)
-
-## For maintainers
-
-* Scripts pin **API version `2025-11-15-preview`** in
-  [`eval_common.py`](./eval_common.py). Bump in one place when GA lands.
-* The evaluator-generation LRO, data-generation LRO, and continuous-eval
-  configuration are preview surfaces; some are still exposed as raw REST
-  in these scripts (via `requests` + a `DefaultAzureCredential` bearer
-  token). When a typed Python surface ships, the calls will collapse to
-  the typed client.
-* For each script, the prerequisites block in the docstring spells out
-  which Foundry resources must already exist (deployed agent, dataset,
-  traces).
-* Add new scripts by following the `evaluate_*` / `generate_dataset_*`
-  naming pattern and wiring them into "Pick the right flow" + "The
-  scripts" above.

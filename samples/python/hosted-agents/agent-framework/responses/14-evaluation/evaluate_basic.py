@@ -1,11 +1,11 @@
 # Copyright (c) Microsoft. All rights reserved.
 
-"""Single-turn evaluation with built-in evaluators.
+"""Turn-level evaluation with built-in evaluators.
 
 DESCRIPTION:
     Runs an OpenAI eval against the deployed hosted agent using a few of the
     built-in Azure AI evaluators — task adherence, fluency, and relevance —
-    over a small inline dataset. This is the canonical single-turn baseline
+    over a small inline dataset. This is the canonical turn-level baseline
     you can copy into any project: change the dataset, change the evaluators,
     and you have a working eval-run.
 
@@ -37,7 +37,7 @@ from eval_common import (
 
 # <configure_evaluation>
 def build_testing_criteria(model: str, response_source: str = "sample") -> list[dict]:
-    """Built-in single-turn evaluators applied to ``{query, response}`` pairs.
+    """Built-in turn-level evaluators applied to ``{query, response}`` pairs.
 
     ``response_source`` controls where the response comes from:
 
@@ -94,7 +94,7 @@ def main() -> None:
         project_client.get_openai_client() as openai_client,
     ):
         eval_object = openai_client.evals.create(
-            name="hosted-agent-single-turn",
+            name="hosted-agent-turn-level",
             data_source_config={
                 "type": "custom",
                 "item_schema": {
@@ -110,7 +110,7 @@ def main() -> None:
 
         run: Union[RunCreateResponse, RunRetrieveResponse] = openai_client.evals.runs.create(
             eval_id=eval_object.id,
-            name=f"single-turn-{target_agent()['name']}",
+            name=f"turn-level-{target_agent()['name']}",
             data_source={
                 "type": "azure_ai_target_completions",
                 "source": {

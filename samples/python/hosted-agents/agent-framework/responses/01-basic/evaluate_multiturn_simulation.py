@@ -1,11 +1,11 @@
 # Copyright (c) Microsoft. All rights reserved.
 
-"""Multi-turn evaluation driven by simulated conversations.
+"""Conversation-level evaluation driven by simulated conversations.
 
 DESCRIPTION:
     Companion to ``main.py``. Once you've deployed the basic agent (``azd up``
     or via the Foundry Toolkit), this script runs an *eval run* that simulates
-    multi-turn conversations against the deployed agent and scores them with
+    conversations against the deployed agent and scores them with
     the 4 built-in conversation-level evaluators
     (``customer_satisfaction``, ``groundedness``, ``coherence``,
     ``task_completion``).
@@ -96,7 +96,7 @@ def main() -> None:
         project_client.get_openai_client() as openai_client,
     ):
         eval_object = openai_client.evals.create(
-            name="basic-agent-multiturn-sim",
+            name="basic-agent-conversation-sim",
             data_source_config={
                 "type": "custom",
                 "item_schema": {

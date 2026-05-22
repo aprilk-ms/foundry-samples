@@ -8,7 +8,7 @@ DESCRIPTION:
     structured evaluation dataset (rows of ``{query, response, ...}``). When
     the LRO completes, the generated dataset is referenced as
     ``source.type = "azure_ai_dataset"`` in a follow-up eval run scored with
-    the built-in single-turn evaluators.
+    the built-in turn-level evaluators.
 
     NOTE: This script grades the ``response`` rows that came out of your
     traces — i.e. answers your agent already gave. That's exactly the right

@@ -77,7 +77,7 @@ def submit_synthetic_job(dataset_name: str, seeds: list[dict]) -> dict:
         {
             "type": "prompt",
             "prompt": (
-                f"Generate diverse, **self-contained single-turn** evaluation "
+                f"Generate diverse, **self-contained turn-level** evaluation "
                 f"questions about: {seed['topic']}. Each question must stand "
                 "on its own — do not assume any earlier conversation context."
             ),

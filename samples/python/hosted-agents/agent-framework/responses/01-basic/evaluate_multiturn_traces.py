@@ -1,9 +1,9 @@
 # Copyright (c) Microsoft. All rights reserved.
 
-"""Multi-turn evaluation over existing agent traces.
+"""Conversation-level evaluation over existing agent traces.
 
 DESCRIPTION:
-    Companion to ``main.py``. Evaluates real multi-turn conversations that
+    Companion to ``main.py``. Evaluates real conversations that
     already exist as Application-Insights traces emitted by the deployed
     ``01-basic`` agent. Three trace-source variants are supported:
 
@@ -104,7 +104,7 @@ def main() -> None:
         project_client.get_openai_client() as openai_client,
     ):
         eval_object = openai_client.evals.create(
-            name="basic-agent-multiturn-traces",
+            name="basic-agent-conversation-traces",
             data_source_config={"type": "azure_ai_source", "scenario": "traces"},
             testing_criteria=build_conversation_evaluators(model),
         )

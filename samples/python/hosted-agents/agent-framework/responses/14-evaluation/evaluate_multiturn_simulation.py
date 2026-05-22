@@ -1,15 +1,15 @@
 # Copyright (c) Microsoft. All rights reserved.
 
-"""Multi-turn evaluation driven by simulated conversations (Scenario S4).
+"""Conversation-level evaluation driven by simulated conversations (Scenario S4).
 
 DESCRIPTION:
     Creates an eval with the four built-in conversation-level evaluators
     (customer_satisfaction, groundedness, coherence, task_completion), then
-    drives an eval run that *simulates* multi-turn conversations against the
+    drives an eval run that *simulates* conversations against the
     deployed hosted agent using ``azure_ai_target_completions`` with
     ``item_generation_params.type = "conversation_gen_preview"``.
 
-    Use this when you do NOT yet have multi-turn traces / a conversation
+    Use this when you do NOT yet have conversation traces / a conversation
     dataset and want the service to generate scenarios on the fly.
 
 USAGE:
@@ -53,7 +53,7 @@ def load_scenarios() -> list[dict]:
 # <build_eval>
 def build_conversation_evaluators(model: str) -> list[dict]:
     """The 4 built-in conversation-level evaluators used across the
-    multi-turn flows in this sample.
+    conversation-level flows in this sample.
     """
     common = {
         "type": "azure_ai_evaluator",
@@ -92,7 +92,7 @@ def main() -> None:
         project_client.get_openai_client() as openai_client,
     ):
         eval_object = openai_client.evals.create(
-            name="hosted-agent-multiturn-sim",
+            name="hosted-agent-conversation-sim",
             data_source_config={
                 "type": "custom",
                 "item_schema": {

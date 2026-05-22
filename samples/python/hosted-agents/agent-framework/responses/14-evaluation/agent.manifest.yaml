@@ -2,9 +2,9 @@ name: agent-framework-agent-evaluation-responses
 description: >
   An Agent Framework agent hosted by Foundry with tracing enabled by default,
   paired with a set of evaluation scripts (Custom Rubric Evaluator as the primary
-  recommended path, red-team / safety evaluators, built-in single- and
-  multi-turn evaluators, dataset generation from traces or synthetic seeds,
-  and scheduled / continuous eval).
+  recommended path, red-team / safety evaluators, built-in turn- and
+  conversation-level evaluators, dataset generation from traces or synthetic
+  seeds, and scheduled / continuous eval).
 metadata:
   tags:
     - Agent Framework

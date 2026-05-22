@@ -63,10 +63,10 @@ To host the agent on Foundry, follow the instructions in the [Deploying the Agen
    - Click **Deploy**. Fields are validated inline, and the extension handles the build/upload, agent version creation, and RBAC role assignment.
 5. After deployment, invoke the agent in the Agent Playground and stream live logs from the **Logs** tab.
 
-## Evaluating multi-turn conversations
+## Evaluating conversations
 
 After your agent is deployed and you've tried it in the Playground, the
-next question is *"is it actually any good at multi-turn conversations?"*
+next question is *"is it actually any good at conversations?"*
 **Evaluation** answers that — you run the agent against test conversations
 and let built-in evaluators (automated scorers, themselves LLM-backed)
 grade each conversation on things like *task completion*, *coherence*,
@@ -74,11 +74,11 @@ and *groundedness*. New to evaluation? Skim the **What is evaluation?**
 section in [`../14-evaluation/README.md`](../14-evaluation/README.md)
 first — this section assumes you've seen it.
 
-Two scripts in this folder let you evaluate multi-turn behavior end-to-end
+Two scripts in this folder let you evaluate conversation-level behavior end-to-end
 without leaving the `01-basic` sample:
 
 * **[`evaluate_multiturn_simulation.py`](./evaluate_multiturn_simulation.py)** —
-  drives the deployed agent through simulated multi-turn conversations
+  drives the deployed agent through simulated conversations
   seeded from [`data/test-scenarios.jsonl`](./data/test-scenarios.jsonl)
   and scores them with the 4 built-in conversation-level evaluators
   (`customer_satisfaction`, `groundedness`, `coherence`, `task_completion`).
@@ -126,8 +126,8 @@ and rationales.
 
 ### See also
 
-These scripts are co-located here for the **multi-turn learning path**. For
-the broader evaluation story — **Custom Rubric Evaluator** ⭐ (primary
-recommended path), red-team / safety, dataset generation (traces /
-synthetic), scheduled / continuous evaluation, and built-in single-turn
+These scripts are co-located here for the **conversation-level evaluation
+learning path**. For the broader evaluation story — **Custom Rubric Evaluator**
+⭐ (primary recommended path), red-team / safety, dataset generation (traces /
+synthetic), scheduled / continuous evaluation, and built-in turn-level
 quality evaluators — see [`../14-evaluation/`](../14-evaluation/).

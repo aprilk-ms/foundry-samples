@@ -1,9 +1,9 @@
 # Copyright (c) Microsoft. All rights reserved.
 
-"""Multi-turn evaluation over existing agent traces (Scenarios S2 + S3).
+"""Conversation-level evaluation over existing agent traces (Scenarios S2 + S3).
 
 DESCRIPTION:
-    Evaluates real multi-turn conversations that already exist as
+    Evaluates real conversations that already exist as
     Application-Insights traces emitted by your deployed hosted agent. Three
     variants are supported:
 
@@ -106,7 +106,7 @@ def main() -> None:
         project_client.get_openai_client() as openai_client,
     ):
         eval_object = openai_client.evals.create(
-            name="hosted-agent-multiturn-traces",
+            name="hosted-agent-conversation-traces",
             data_source_config={
                 "type": "azure_ai_source",
                 "scenario": "traces",

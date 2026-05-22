@@ -70,4 +70,4 @@ To host the agent on Foundry, follow the instructions in the [Deploying the Agen
 
 ## Related
 
-**Evaluate this agent:** see [`../14-evaluation/`](../14-evaluation/) for the general evaluation flow — the **Custom Rubric Evaluator** ⭐ (primary recommended path) and red-team / safety, plus multi-turn evaluation, dataset generation, and scheduled / continuous evaluation. For multi-turn evaluation against this agent's deployment, the scripts in [`../01-basic/`](../01-basic/#evaluating-multi-turn-conversations) are the simplest starting point.
+**Evaluate this agent:** see [`../14-evaluation/`](../14-evaluation/) for the general evaluation flow — the **Custom Rubric Evaluator** ⭐ (primary recommended path) and red-team / safety, plus conversation-level evaluation, dataset generation, and scheduled / continuous evaluation. For conversation-level evaluation against this agent's deployment, the scripts in [`../01-basic/`](../01-basic/#evaluating-conversations) are the simplest starting point.
