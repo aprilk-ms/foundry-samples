@@ -146,7 +146,7 @@ print already does that math — you just need to remember the direction.
 > pipeline. They are inert in Python — feel free to ignore them when
 > reading or copying code.
 
-## How this sample is structured
+## How It Works
 
 This folder contains *both* a tiny demo agent (`main.py`, `agent.yaml`) **and**
 the eval scripts. The agent is a minimal `gpt-4.1-mini` chat agent with
@@ -323,6 +323,17 @@ If you're adapting the scripts for the
 default), copy the env-var pattern from
 [`08-observability/`](../08-observability/) onto your `01-basic`
 deployment first.
+
+## Deploying the Agent to Foundry
+
+The **Quickstart** at the top of this README is the one-shot version
+(`azd ai agent init` + `azd up`). For the full deploy options — the
+Foundry Toolkit VS Code extension wizard, container vs. code packaging,
+ACR registries — follow the [Deploying the Agent to Foundry](../../README.md#deploying-the-agent-to-foundry)
+section of the parent README. This sample's `agent.manifest.yaml` already
+ships with `ENABLE_INSTRUMENTATION=true` and `ENABLE_SENSITIVE_DATA=true`,
+so trace-driven eval flows (red-team, multi-turn traces, scheduled,
+dataset-from-traces) work the moment the agent receives traffic.
 
 ## Where to view results
 
