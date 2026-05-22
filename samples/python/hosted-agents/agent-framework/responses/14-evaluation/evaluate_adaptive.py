@@ -1,15 +1,15 @@
 # Copyright (c) Microsoft. All rights reserved.
 
-"""Custom Rubric Evaluator — the default starting point for real projects.
+"""Adaptive Evaluator — the primary recommended evaluator for hosted agents.
 
 WHAT THIS SCRIPT DOES (in plain English):
     You describe your agent in a short paragraph ("a customer-support agent
     for an outdoor-gear retailer; it should be friendly, cite return policy
-    when relevant, and never invent product SKUs"). Foundry turns that
-    description into a multi-dimensional **rubric** — say 5-7 named
-    dimensions like *factuality*, *tone*, *policy_citation*. The rubric
-    becomes a reusable evaluator that grades every agent response on every
-    dimension, with a per-dimension score and a written rationale.
+    when relevant, and never invent product SKUs"). Foundry's **adaptive
+    evaluator** turns that description into a multi-dimensional **rubric** —
+    say 5-7 named dimensions like *factuality*, *tone*, *policy_citation*.
+    The rubric becomes a reusable evaluator that grades every agent response
+    on every dimension, with a per-dimension score and a written rationale.
 
     The script:
       1. Submits the description to ``POST /evaluator_generation_jobs`` and
@@ -22,19 +22,25 @@ WHAT THIS SCRIPT DOES (in plain English):
       4. Runs an eval against the deployed hosted agent using the saved
          rubric as the testing criterion, and polls it to completion.
 
-WHY THIS BEATS THE BUILT-IN EVALUATORS:
-    Built-ins like ``builtin.fluency`` ask generic questions ("is the
-    response grammatically correct?"). A Custom Rubric evaluator asks
-    questions tailored to *your* agent's job — that's the difference
-    between knowing your agent reads well and knowing your agent does
-    what it's supposed to do.
+WHY THIS IS THE PRIMARY RECOMMENDED PATH:
+    Built-in quality evaluators (``builtin.fluency``, ``builtin.relevance``,
+    ``builtin.coherence``, …) ask generic questions ("is the response
+    grammatically correct?"). The adaptive evaluator asks questions tailored
+    to *your* agent's job — that's the difference between knowing your
+    agent reads well and knowing your agent does what it's supposed to do.
+    Use the built-in quality evaluators in ``evaluate_basic.py`` as a quick
+    sanity check; use this script for anything you actually care about.
+
+    (Built-in **safety** evaluators in ``evaluate_redteam.py`` remain
+    primary too — they catch a different class of failure that an adaptive
+    rubric won't cover by default.)
 
 USAGE:
     # ▼ CHANGE THE PROMPT IN submit_generation_job() FIRST — see below.
-    python evaluate_custom_rubric.py
+    python evaluate_adaptive.py
 
     # Optional: also run the HITL "edit + regenerate" flow.
-    EVAL_RUBRIC_REGENERATE=true python evaluate_custom_rubric.py
+    EVAL_RUBRIC_REGENERATE=true python evaluate_adaptive.py
 
     Prerequisites (see README.md for the full list):
       * pip install -r requirements.txt
@@ -192,7 +198,7 @@ def run_eval_with_rubric(evaluator_name: str, evaluator_version: int | str) -> N
             testing_criteria=[
                 {
                     "type": "azure_ai_evaluator",
-                    "name": "custom_rubric",
+                    "name": "adaptive",
                     "evaluator_name": f"{evaluator_name}:{evaluator_version}",
                     "initialization_parameters": {"deployment_name": model},
                     "data_mapping": {

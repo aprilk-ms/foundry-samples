@@ -78,4 +78,4 @@ In the Foundry UI, next to the **Playground** tab is the **Traces** tab, where y
 
 ## Related
 
-**Evaluate this agent:** see [`../14-evaluation/`](../14-evaluation/) for the general evaluation flow — **Custom Rubric Evaluator** ⭐, built-in single- and multi-turn evaluators, dataset generation, scheduled / continuous evaluation, and red-team / safety. For multi-turn evaluation against this agent's deployment, the scripts in [`../01-basic/`](../01-basic/#evaluating-multi-turn-conversations) are the simplest starting point.
+**Evaluate this agent:** see [`../14-evaluation/`](../14-evaluation/) for the general evaluation flow — the **Adaptive Evaluator** ⭐ (primary recommended path) and red-team / safety, plus multi-turn evaluation, dataset generation, and scheduled / continuous evaluation. For multi-turn evaluation against this agent's deployment, the scripts in [`../01-basic/`](../01-basic/#evaluating-multi-turn-conversations) are the simplest starting point.

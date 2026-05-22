@@ -22,9 +22,10 @@ Common reasons to run one:
 
 The output of every evaluation is a row of scores per input + a portal page
 where you can drill into per-row scores and rationales. *Nothing in this
-sample needs you to write your own evaluator from scratch* — Foundry ships
-built-in evaluators, and the **Custom Rubric Evaluator** ⭐ generates a
-tailored one for your agent from a short prompt.
+sample needs you to write your own evaluator from scratch* — the
+**Adaptive Evaluator** ⭐ generates one tailored to your agent from a
+short prompt (the recommended path), and Foundry also ships built-in
+quality and safety evaluators you can mix in.
 
 ### Heads-up: scores don't all use the same scale
 
@@ -34,11 +35,11 @@ than the digit. The numbers themselves mean different things:
 
 | Evaluator family | Scale | Direction |
 |---|---|---|
-| **Quality** (`builtin.fluency`, `builtin.relevance`, `builtin.coherence`, `builtin.groundedness`) | **1-5** | **Higher is better.** A 5 means "great"; a 1 means "broken". |
-| **Agent task** (`builtin.task_adherence`, `builtin.task_completion`, `builtin.customer_satisfaction`) | **Pass / Fail** + numeric score where the evaluator returns one | Trust **`passed`** + the rationale first; the numeric score (when present) is a secondary signal. |
-| **Safety / content** (`builtin.violence`, `builtin.self_harm`, `builtin.hate_unfairness`, `builtin.sexual`) | **0-7 severity** | **Higher is worse.** 0 = safe; 4+ = concerning; 6-7 = severe. Default pass threshold is severity ≤ 3. |
+| **Adaptive Evaluator** ⭐ (your generated rubric) | **1-5 per dimension**, weighted | Higher is better; the rubric weights each dimension. **Primary recommended evaluator** — tailored to *your* agent. |
+| **Safety / content** (`builtin.violence`, `builtin.self_harm`, `builtin.hate_unfairness`, `builtin.sexual`) | **0-7 severity** | **Higher is worse.** 0 = safe; 4+ = concerning; 6-7 = severe. Default pass threshold is severity ≤ 3. **Primary for any user-facing agent.** |
 | **Attack detection** (`builtin.indirect_attack`) | **Detected / Not detected** | A "detected" result means the agent appears to have been manipulated by a prompt-injection-style attack (bad). |
-| **Custom Rubric** (your generated rubric) | **1-5 per dimension**, weighted | Higher is better; the rubric weights each dimension. |
+| Quality (`builtin.fluency`, `builtin.relevance`, `builtin.coherence`, `builtin.groundedness`) | 1-5 | Higher is better. Generic signal — useful as a sanity check; prefer Adaptive for anything you care about. |
+| Agent task (`builtin.task_adherence`, `builtin.task_completion`, `builtin.customer_satisfaction`) | Pass / Fail + numeric where present | Trust `passed` + the rationale first. Generic signal — Adaptive usually tells you more. |
 
 "Passed" rows mean *score ≥ pass-threshold* (quality) or
 *severity ≤ pass-threshold* (safety). The `result_counts` the scripts
@@ -48,7 +49,7 @@ print already does that math — you just need to remember the direction.
 
 | Term | What it means |
 |---|---|
-| **Evaluator** | The judge that scores one row. Three flavors: *built-in* (`builtin.fluency`, `builtin.task_adherence`, …), *custom rubric* (auto-generated from your prompt), or *code-based* (yours). |
+| **Evaluator** | The judge that scores one row. Three flavors: **adaptive** (auto-generated from your prompt — primary recommended), *built-in* (`builtin.violence`, `builtin.fluency`, …), or *code-based* (yours). |
 | **Dataset** | The rows you evaluate against. Either inline `{query: ...}` items, a registered Foundry dataset, or generated from traces. |
 | **Trace** | A recording of one real agent invocation (request, tool calls, response, latencies) sent to Application Insights by the agent runtime. |
 | **Eval group** | A reusable "test suite" definition — schema + evaluators. Created once, run many times. |
@@ -95,11 +96,18 @@ export FOUNDRY_PROJECT_ENDPOINT="https://<account>.services.ai.azure.com/api/pro
 export AZURE_AI_MODEL_DEPLOYMENT_NAME="gpt-4.1-mini"
 pip install -r requirements.txt
 
-# 3. Run your first evaluation. Start with the simplest one.
-python evaluate_basic.py
+# 3. Run the primary recommended evaluator. Edit the agent description at
+#    the top of submit_generation_job() in the script first so the
+#    generated rubric matches what your agent is supposed to do.
+python evaluate_adaptive.py
 ```
 
 > **Windows / PowerShell?** Replace `export FOO=bar` with `$env:FOO = "bar"`.
+
+> Want a 60-second sanity check before kicking off the adaptive
+> generation? Run [`evaluate_basic.py`](./evaluate_basic.py) first — it
+> uses generic built-in evaluators to confirm the end-to-end plumbing
+> works, then come back to `evaluate_adaptive.py` for the real signal.
 
 What you'll see (trimmed):
 
@@ -108,6 +116,18 @@ Using API version: 2025-11-15-preview
 Project: https://<account>.services.ai.azure.com/api/projects/<project>
 Target agent: {'type': 'azure_ai_agent', 'name': 'agent-framework-agent-evaluation-responses', 'version': '1'}
 
+Submitting evaluator generation job…
+  status: queued
+  status: in_progress
+  status: completed
+Generated rubric "adaptive-rubric-…" v1 with 6 dimensions:
+  - factuality (weight 0.25)
+  - tone (weight 0.15)
+  - completeness (weight 0.20)
+  - policy_citation (weight 0.15)
+  - safety_disclaimers (weight 0.15)
+  - hallucination_resistance (weight 0.10)
+
 Eval created: eval_abc123…
 Eval run created: evalrun_def456…
   status: queued
@@ -115,27 +135,26 @@ Eval run created: evalrun_def456…
   status: completed
 
 ✓ Eval run completed.
-Result counts: {'passed': 4, 'failed': 0, 'errored': 0, 'total': 4}
+Result counts: {'passed': 3, 'failed': 1, 'errored': 0, 'total': 4}
 Report URL: https://ai.azure.com/.../evaluations/evalrun_def456…
 
 Showing 3 of 4 output items:
 (set EVAL_DEBUG=1 to also see the raw payload.)
 
-  [1] Question: What's the capital of France?
-      Answer:   Paris.
-    task_adherence            score=n/a    PASS
-        rationale: Directly answered the question with the correct city.
-    fluency                   score=5      PASS
-    relevance                 score=5      PASS
+  [1] Question: What's your return policy on hiking boots?
+      Answer:   You can return unused boots within 60 days for a full refund.
+    adaptive                  score=4.6    PASS
+        rationale: Accurate policy, friendly tone, cites the 60-day window. Lacks an explicit policy link.
 ```
 
 Open the **Report URL** in the Foundry portal to see every row, every
-evaluator's score and rationale, and an aggregate chart.
+dimension's per-row score and rationale, and an aggregate chart.
 
-> Once the basic flow works, switch to
-> **[`evaluate_custom_rubric.py`](./evaluate_custom_rubric.py)** ⭐ for
-> your own agent — it generates a rubric tailored to what your agent is
-> supposed to do, not a generic fluency score.
+> **Already shipping to users?** Also run
+> [`evaluate_redteam.py`](./evaluate_redteam.py) — adaptive grades
+> *quality on what you asked for*; safety evaluators grade *whether the
+> agent ever produces harmful content under adversarial input*. They're
+> complementary, not redundant.
 
 ## If a score is low, what next?
 
@@ -170,69 +189,75 @@ heavier — be deliberate before running them:
 
 | Script | What it consumes | Heads-up |
 |---|---|---|
-| `evaluate_basic.py` | A few agent calls + a few judge calls | Cheapest. Safe default. |
-| `evaluate_custom_rubric.py` | One generation LRO + the same eval-run cost | Generation is a multi-stage LLM job; budget a few minutes the first time. |
+| `evaluate_adaptive.py` ⭐ | One generation LRO + the same eval-run cost | **Primary path.** Generation is a multi-stage LLM job; budget a few minutes the first time. |
+| `evaluate_redteam.py` | One agent call per adversarial prompt + judge | **Primary for user-facing agents.** ⚠ See the privacy callout below — adversarial prompts + agent responses are *logged*. |
+| `evaluate_basic.py` | A few agent calls + a few judge calls | Cheapest. Useful as a sanity check; lower signal than adaptive for real projects. |
 | `evaluate_multiturn_simulation.py` | Up to *N seeds × turns-per-conversation* agent calls + judge | Costs scale with how many seeds you load — start small. |
 | `evaluate_multiturn_traces.py` | Judge calls **over existing traced conversations** — no live agent calls | Trim the trace time window or `agent_filter` to control judge cost and result volume. |
 | `generate_dataset_*.py` | Generation LRO (service requires `max_samples ≥ 15`) + eval cost | Each run **registers a new dataset** in your project — clean up old ones in the portal if you iterate a lot. |
 | `evaluate_scheduled.py` | One eval row **per new agent response** (event-triggered) | ⚠ **Continues running after the script exits.** Use the portal (or the delete snippet at the bottom of the script) to pause or remove the schedule when you're done. |
-| `evaluate_redteam.py` | One agent call per adversarial prompt + judge | ⚠ See the privacy callout below — adversarial prompts + agent responses are *logged*. |
 
 If you're on a sandbox project with cost alerts, set them up before
 running the multi-turn / scheduled / red-team flows.
 
 ## Pick the right flow
 
+**Primary recommended:** [`evaluate_adaptive.py`](./evaluate_adaptive.py) ⭐ for quality tailored to *your* agent, plus [`evaluate_redteam.py`](./evaluate_redteam.py) for safety. Pick additional flows from the table when you need them.
+
 | You want to … | Use this script |
 |---|---|
-| See what an end-to-end evaluation looks like for the first time | [`evaluate_basic.py`](./evaluate_basic.py) |
-| Get a tailored evaluator for **your** agent without writing one by hand ⭐ | [`evaluate_custom_rubric.py`](./evaluate_custom_rubric.py) |
+| **Get a tailored evaluator for your agent (primary)** ⭐ | [`evaluate_adaptive.py`](./evaluate_adaptive.py) |
+| **Probe the agent against adversarial / red-team prompts (primary for user-facing agents)** | [`evaluate_redteam.py`](./evaluate_redteam.py) |
+| Sanity-check end-to-end plumbing with generic built-in evaluators | [`evaluate_basic.py`](./evaluate_basic.py) |
 | Evaluate multi-turn behavior **without** any existing dataset (the service generates conversations for you) | [`evaluate_multiturn_simulation.py`](./evaluate_multiturn_simulation.py) |
 | Evaluate multi-turn behavior over **your own live traces** | [`evaluate_multiturn_traces.py`](./evaluate_multiturn_traces.py) |
 | Turn recent agent **traces** into a reusable evaluation dataset | [`generate_dataset_from_traces.py`](./generate_dataset_from_traces.py) |
 | Bootstrap an evaluation dataset from a few **topic seeds** | [`generate_dataset_synthetic.py`](./generate_dataset_synthetic.py) |
 | Score every new agent response **continuously** (or on a schedule) | [`evaluate_scheduled.py`](./evaluate_scheduled.py) |
-| Probe the agent against **adversarial / red-team** prompts | [`evaluate_redteam.py`](./evaluate_redteam.py) |
 
 ## The scripts
 
-Read them roughly in this order. Each script's docstring expands on
-prerequisites and env-var knobs.
+The list below is in *recommended exploration order*. The two primary
+scripts (**adaptive** + **red-team**) come first; everything else is
+either a sanity-check, a multi-turn variant, or a supporting flow.
 
-1. [`evaluate_basic.py`](./evaluate_basic.py) — four inline questions,
+1. [`evaluate_adaptive.py`](./evaluate_adaptive.py) ⭐ — **primary
+   recommended evaluator.** Generates a 5-7 dimension rubric tailored
+   to *your* agent's job (tone, completeness, "did it cite a source?")
+   from a short prompt, then evaluates against it. **Edit the prompt at
+   the top of `submit_generation_job()` first** — the default is a
+   generic placeholder. **Use this for any project you care about.**
+2. [`evaluate_redteam.py`](./evaluate_redteam.py) — **primary safety
+   evaluator.** Sends adversarial prompts (violence, self-harm, hate,
+   sexual) and scores responses on the **0-7 severity** scale (higher
+   is worse). Run this for any user-facing agent in addition to
+   adaptive. ⚠ **Writes adversarial prompts + agent responses to your
+   traces** — use a non-production project.
+3. [`evaluate_basic.py`](./evaluate_basic.py) — four inline questions,
    built-in evaluators (`task_adherence`, `fluency`, `relevance`).
-   Finishes in under a minute. **Easiest first script.**
-2. [`evaluate_custom_rubric.py`](./evaluate_custom_rubric.py) ⭐ —
-   generates a 5-7 dimension rubric tailored to *your* agent's job
-   (tone, completeness, "did it cite a source?") from a short prompt,
-   then evaluates against it. **Edit the prompt at the top of
-   `submit_generation_job()` first** — the default is a generic
-   placeholder. **Use this for your own agent.**
-3. [`evaluate_multiturn_simulation.py`](./evaluate_multiturn_simulation.py) —
+   Finishes in under a minute. Useful as an end-to-end **sanity check**
+   that your project endpoint + agent + creds are wired up correctly;
+   for real signal use `evaluate_adaptive.py`.
+4. [`evaluate_multiturn_simulation.py`](./evaluate_multiturn_simulation.py) —
    Foundry simulates full multi-turn conversations from seed scenarios
    and scores each. **Run this before you have real traffic.**
-4. [`evaluate_multiturn_traces.py`](./evaluate_multiturn_traces.py) —
+5. [`evaluate_multiturn_traces.py`](./evaluate_multiturn_traces.py) —
    same four multi-turn evaluators, scored against **real traced
    conversations**. **Run this once you have traffic.**
-5. [`generate_dataset_from_traces.py`](./generate_dataset_from_traces.py)
+6. [`generate_dataset_from_traces.py`](./generate_dataset_from_traces.py)
    — materializes recent traces into a registered, reusable dataset and
    evaluates the rows. Scores past production behavior; to re-run the
    same questions through the *current* agent, wrap the data source in
    `azure_ai_target_completions` (see `evaluate_basic.py`).
-6. [`generate_dataset_synthetic.py`](./generate_dataset_synthetic.py) —
+7. [`generate_dataset_synthetic.py`](./generate_dataset_synthetic.py) —
    bootstraps a domain-relevant dataset from short topic seeds when you
    have no traffic yet. **Default**: runs the generated questions through
    your deployed agent and scores the answers. Set
    `EVAL_AGAINST_DATASET_ONLY=true` to grade only the synthetic rows.
-7. [`evaluate_scheduled.py`](./evaluate_scheduled.py) — scores every new
+8. [`evaluate_scheduled.py`](./evaluate_scheduled.py) — scores every new
    agent response automatically (or every hour over recent traces with
    `EVAL_SCHEDULE_INTERVAL=1h`). ⚠ **The schedule keeps running after
    the script exits** — see "Cost and data usage" for cleanup.
-8. [`evaluate_redteam.py`](./evaluate_redteam.py) — sends adversarial
-   prompts (violence, self-harm, hate, sexual) and scores responses on
-   the **0-7 severity** scale (higher is worse). ⚠ **Writes adversarial
-   prompts + agent responses to your traces** — use a non-production
-   project.
 
 ## Prerequisites
 
