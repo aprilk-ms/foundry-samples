@@ -10,7 +10,7 @@ DESCRIPTION:
     (``customer_satisfaction``, ``groundedness``, ``coherence``,
     ``task_completion``).
 
-    For the full evaluation learning path — Adaptive Evaluator (primary
+    For the full evaluation learning path — Custom Rubric Evaluator (primary
     recommended path), red-team / safety, dataset generation, and
     scheduled / continuous eval — see
     [``14-evaluation/``](../14-evaluation/).

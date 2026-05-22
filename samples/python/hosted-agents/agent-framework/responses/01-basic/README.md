@@ -127,7 +127,7 @@ and rationales.
 ### See also
 
 These scripts are co-located here for the **multi-turn learning path**. For
-the broader evaluation story — **Adaptive Evaluator** ⭐ (primary
+the broader evaluation story — **Custom Rubric Evaluator** ⭐ (primary
 recommended path), red-team / safety, dataset generation (traces /
 synthetic), scheduled / continuous evaluation, and built-in single-turn
 quality evaluators — see [`../14-evaluation/`](../14-evaluation/).
